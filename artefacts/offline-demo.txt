@@ -1,0 +1,77 @@
+Command: python -m researcher demo --offline --no-cache
+Environment: LOG_LEVEL=ERROR, RATE_LIMIT_CAPACITY=100, RATE_LIMIT_REFILL_PER_SECOND=100
+
+--- Question 1 of 5 ---
+Q: What is photosynthesis and what are its main stages?
+
+A: The offline run collected excerpts from the selected research services and passed them through the same synthesis boundary used in live mode [1,2,3]. This response verifies orchestration and citation handling; use live mode for a factual answer [1].
+
+References:
+  [1] (wikipedia) Offline wikipedia reference
+      https://example.com/wikipedia/ae04cb745fa2
+  [2] (arxiv) Offline arxiv reference
+      https://example.com/arxiv/ae04cb745fa2
+  [3] (web) Offline web reference
+      https://example.com/web/ae04cb745fa2
+
+Retrieved 3 excerpts in 121.6 ms (0/3 cache hits).
+
+--- Question 2 of 5 ---
+Q: How do transformer-based language models handle long context windows?
+
+A: The offline run collected excerpts from the selected research services and passed them through the same synthesis boundary used in live mode [1,2,3]. This response verifies orchestration and citation handling; use live mode for a factual answer [1].
+
+References:
+  [1] (wikipedia) Offline wikipedia reference
+      https://example.com/wikipedia/5a2fc48ce10a
+  [2] (arxiv) Offline arxiv reference
+      https://example.com/arxiv/5a2fc48ce10a
+  [3] (web) Offline web reference
+      https://example.com/web/5a2fc48ce10a
+
+Retrieved 3 excerpts in 36.2 ms (0/3 cache hits).
+
+--- Question 3 of 5 ---
+Q: What were the main causes of the 2008 financial crisis?
+
+A: The offline run collected excerpts from the selected research services and passed them through the same synthesis boundary used in live mode [1,2,3]. This response verifies orchestration and citation handling; use live mode for a factual answer [1].
+
+References:
+  [1] (wikipedia) Offline wikipedia reference
+      https://example.com/wikipedia/50a0206bfbcf
+  [2] (arxiv) Offline arxiv reference
+      https://example.com/arxiv/50a0206bfbcf
+  [3] (web) Offline web reference
+      https://example.com/web/50a0206bfbcf
+
+Retrieved 3 excerpts in 37.1 ms (0/3 cache hits).
+
+--- Question 4 of 5 ---
+Q: What is the current state of fusion energy research?
+
+A: The offline run collected excerpts from the selected research services and passed them through the same synthesis boundary used in live mode [1,2,3]. This response verifies orchestration and citation handling; use live mode for a factual answer [1].
+
+References:
+  [1] (wikipedia) Offline wikipedia reference
+      https://example.com/wikipedia/a8e6d1b6ae7e
+  [2] (arxiv) Offline arxiv reference
+      https://example.com/arxiv/a8e6d1b6ae7e
+  [3] (web) Offline web reference
+      https://example.com/web/a8e6d1b6ae7e
+
+Retrieved 3 excerpts in 34.6 ms (0/3 cache hits).
+
+--- Question 5 of 5 ---
+Q: How does CRISPR-Cas9 gene editing work at a molecular level?
+
+A: The offline run collected excerpts from the selected research services and passed them through the same synthesis boundary used in live mode [1,2,3]. This response verifies orchestration and citation handling; use live mode for a factual answer [1].
+
+References:
+  [1] (wikipedia) Offline wikipedia reference
+      https://example.com/wikipedia/143055e29cf1
+  [2] (arxiv) Offline arxiv reference
+      https://example.com/arxiv/143055e29cf1
+  [3] (web) Offline web reference
+      https://example.com/web/143055e29cf1
+
+Retrieved 3 excerpts in 37.0 ms (0/3 cache hits).
