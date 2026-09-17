@@ -156,3 +156,54 @@ class AIService:
                 return await call()
         raise RuntimeError("retry loop ended without a result")
 
+    @staticmethod
+    def _log_retry(state: RetryCallState, operation: str) -> None:
+        failure = state.outcome.exception() if state.outcome else None
+        logger.warning(
+            "external_call_retry operation=%s attempt=%d error=%s",
+            operation,
+            state.attempt_number,
+            failure,
+        )
+
+    def _fetcher_for(self, source: SourceName) -> SourceFetcher:
+        if source is SourceName.WIKIPEDIA:
+            return self._functions.wikipedia
+        if source is SourceName.ARXIV:
+            return self._functions.arxiv
+        return self._functions.web
+
+    @staticmethod
+    def _validate_sources(source: SourceName, items: object) -> list[Source]:
+        if not isinstance(items, list):
+            raise InvalidAIResponseError(f"{source.value} returned a non-list response")
+        valid: list[Source] = []
+        for item in items:
+            if not isinstance(item, Source):
+                logger.warning("source_item_dropped source=%s reason=wrong_type", source.value)
+                continue
+            parsed = urlparse(item.url)
+            if item.origin != source.value or parsed.scheme not in {"http", "https"}:
+                logger.warning(
+                    "source_item_dropped source=%s reason=invalid_metadata",
+                    source.value,
+                )
+                continue
+            if not item.snippet.strip():
+                logger.warning("source_item_dropped source=%s reason=empty_snippet", source.value)
+                continue
+            valid.append(item)
+        return valid
+
+    @staticmethod
+    def _validate_answer(result: object, question: str, sources: list[Source]) -> None:
+        if not isinstance(result, AnswerWithCitations):
+            raise InvalidAIResponseError("synthesizer returned an unexpected response type")
+        if result.question != question.strip() or not result.answer.strip():
+            raise InvalidAIResponseError("synthesizer returned an invalid question or empty answer")
+        indices = [citation.index for citation in result.citations]
+        invalid_index = any(index < 1 or index > len(sources) for index in indices)
+        if len(indices) != len(set(indices)) or invalid_index:
+            raise InvalidAIResponseError("synthesizer returned invalid citation indices")
+        if any(citation.source != sources[citation.index - 1] for citation in result.citations):
+            raise InvalidAIResponseError("synthesizer returned a citation/source mismatch")
