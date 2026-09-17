@@ -41,3 +41,118 @@ class AIFunctions:
     arxiv: SourceFetcher = fetch_arxiv
     web: SourceFetcher = fetch_web
     synthesizer: Synthesizer = synthesize
+
+
+class AIService:
+    """Apply cross-cutting reliability controls to every ``ai.*`` call."""
+
+    def __init__(
+        self,
+        settings: Settings,
+        *,
+        functions: AIFunctions | None = None,
+        rate_limiter: AsyncTokenBucket | None = None,
+    ) -> None:
+        self._settings = settings
+        self._functions = functions or AIFunctions()
+        self._rate_limiter = rate_limiter or AsyncTokenBucket(
+            settings.rate_limit_capacity,
+            settings.rate_limit_refill_per_second,
+        )
+
+    def make_client(self) -> httpx.AsyncClient:
+        """Create the shared connection pool used by all source fetchers in one request."""
+
+        return httpx.AsyncClient(
+            timeout=self._settings.external_call_timeout_seconds,
+            follow_redirects=True,
+            headers={"User-Agent": "AIENG-Research-Assistant/1.0"},
+        )
+
+    async def fetch_source(
+        self,
+        source: SourceName,
+        question: str,
+        *,
+        client: httpx.AsyncClient,
+    ) -> list[Source]:
+        """Fetch one source with rate limiting, retry, timeout, validation and logging."""
+
+        fetcher = self._fetcher_for(source)
+
+        async def call() -> list[Source]:
+            await self._rate_limiter.acquire()
+            return await asyncio.wait_for(
+                fetcher(
+                    question,
+                    max_results=self._settings.max_sources_per_query,
+                    client=client,
+                ),
+                timeout=self._settings.external_call_timeout_seconds,
+            )
+
+        started = time.perf_counter()
+        logger.info("source_fetch_started source=%s query_chars=%d", source.value, len(question))
+        logger.debug("source_fetch_input source=%s question=%r", source.value, question)
+        try:
+            raw_sources = await self._run_with_retry(call, operation_name=f"fetch_{source.value}")
+        except (ProviderError, httpx.HTTPError, TimeoutError) as exc:
+            raise ExternalServiceError(f"{source.value} failed after retries: {exc}") from exc
+
+        sources = self._validate_sources(source, raw_sources)
+        elapsed_ms = (time.perf_counter() - started) * 1_000
+        logger.info(
+            "source_fetch_finished source=%s items=%d duration_ms=%.1f",
+            source.value,
+            len(sources),
+            elapsed_ms,
+        )
+        logger.debug("source_fetch_output source=%s payload=%r", source.value, sources)
+        return sources
+
+    async def synthesize(
+        self,
+        question: str,
+        sources: list[Source],
+    ) -> AnswerWithCitations:
+        """Synthesize and validate a cited answer without blocking the event loop."""
+
+        async def call() -> AnswerWithCitations:
+            await self._rate_limiter.acquire()
+            return await asyncio.wait_for(
+                asyncio.to_thread(self._functions.synthesizer, question, sources),
+                timeout=self._settings.synthesis_timeout_seconds,
+            )
+
+        started = time.perf_counter()
+        logger.info("synthesis_started sources=%d question_chars=%d", len(sources), len(question))
+        try:
+            result = await self._run_with_retry(call, operation_name="synthesize")
+        except (ProviderError, httpx.HTTPError, TimeoutError) as exc:
+            raise ExternalServiceError(f"answer synthesis failed after retries: {exc}") from exc
+        self._validate_answer(result, question, sources)
+        logger.info("synthesis_finished duration_ms=%.1f", (time.perf_counter() - started) * 1_000)
+        logger.debug("synthesis_output payload=%r", result)
+        return result
+
+    async def _run_with_retry(
+        self,
+        call: Callable[[], Awaitable[T]],
+        *,
+        operation_name: str,
+    ) -> T:
+        retrying = AsyncRetrying(
+            stop=stop_after_attempt(self._settings.retry_attempts),
+            wait=wait_exponential(
+                multiplier=self._settings.retry_initial_delay_seconds,
+                max=self._settings.retry_max_delay_seconds,
+            ),
+            retry=retry_if_exception_type((ProviderError, httpx.HTTPError, TimeoutError)),
+            before_sleep=lambda state: self._log_retry(state, operation_name),
+            reraise=True,
+        )
+        async for attempt in retrying:
+            with attempt:
+                return await call()
+        raise RuntimeError("retry loop ended without a result")
+
