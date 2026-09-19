@@ -169,7 +169,10 @@ class SQLiteResearchRepository(ResearchRepository):
                 Citation(
                     index=row["citation_index"],
                     source=Source(
-                        title=row["title"], url=row["url"], snippet=row["snippet"], origin=row["origin"]
+                        title=row["title"],
+                        url=row["url"],
+                        snippet=row["snippet"],
+                        origin=row["origin"],
                     ),
                 )
                 for row in citation_rows

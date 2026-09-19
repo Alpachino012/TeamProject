@@ -106,7 +106,9 @@ class JsonFileSourceCache(SourceCache):
         temporary = self._path.with_suffix(self._path.suffix + ".tmp")
         try:
             self._path.parent.mkdir(parents=True, exist_ok=True)
-            temporary.write_text(json.dumps(records, ensure_ascii=False, indent=2), encoding="utf-8")
+            temporary.write_text(
+                json.dumps(records, ensure_ascii=False, indent=2), encoding="utf-8"
+            )
             os.replace(temporary, self._path)
         except OSError as exc:
             raise CacheError(f"cannot write cache file {self._path}: {exc}") from exc
