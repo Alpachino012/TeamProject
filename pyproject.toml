@@ -1,0 +1,32 @@
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+extend-exclude = [
+    "Instructions_references",
+    "ai",
+    "tests/conftest.py",
+    "tests/test_ai_smoke.py",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/bench.py" = ["E402"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["src", "researcher.py", "scripts"]
+exclude = ["Instructions_references", "ai"]
+
+[[tool.mypy.overrides]]
+module = ["ai", "ai.*"]
+follow_imports = "skip"
+ignore_errors = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "strict"
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "--strict-markers"

@@ -1,12 +1,14 @@
 from __future__ import annotations
+
 import asyncio
 import hashlib
 import re
-from collections.abc import Callable, Available
+from collections.abc import Awaitable, Callable
 from typing import Any
 
-from ai import AnswerWithCitations, Source, sythesize
+from ai import AnswerWithCitations, Source, synthesize
 from src.services.ai_service import AIFunctions
+
 
 class OfflineLLM:
 
@@ -15,14 +17,15 @@ class OfflineLLM:
             prompt: str, 
             *,
             json_schema: dict[Any, Any] | None = None,
-            max_tokents: int = 1024,
+            max_tokens: int = 1024,
     ) -> str:
         source_count = len(re.findall(r"^\[\d+\]", prompt, flags=re.MULTILINE))
         citations = ",".join(str(index) for index in range(1, min(source_count, 3) + 1))
         return(
             "The offline run collected excerpts from the selected research services "
-            f"and passed them through the same sythesis boundary used in live mode [{citations}]. "
-            "This response verifies orchestration and citation handling; use live mode for a factual answer [1]."
+            f"and passed them through the same synthesis boundary used in live mode [{citations}]. "
+            "This response verifies orchestration and citation handling; "
+            "use live mode for a factual answer [1]."
         )
     
 def build_offline_functions(delay_seconds: float = 0.02) -> AIFunctions:
@@ -34,8 +37,8 @@ def build_offline_functions(delay_seconds: float = 0.02) -> AIFunctions:
                 client: Any = None,
         ) -> list[Source]:
             await asyncio.sleep(delay_seconds)
-            title = f"Offline {origin} reference "
-            query_id = hashlib.sha256(query.encode("utf-8").hexidigest()[:12])
+            title = f"Offline {origin} reference"
+            query_id = hashlib.sha256(query.encode("utf-8")).hexdigest()[:12]
             return [
                 Source(
                     title=title,
@@ -46,11 +49,11 @@ def build_offline_functions(delay_seconds: float = 0.02) -> AIFunctions:
             ][:max_results]
         return fetcher
     llm = OfflineLLM()
-    def offline_sythesizer(question: str, sources: list[Source]) -> AnswerWithCitations:
+    def offline_synthesizer(question: str, sources: list[Source]) -> AnswerWithCitations:
         return synthesize(question, sources, llm = llm)
     return AIFunctions(
-        wikipedia = make_fetcher("Wikipedia"),
+        wikipedia = make_fetcher("wikipedia"),
         arxiv = make_fetcher("arxiv"),
         web = make_fetcher("web"),
-        sythesizer = offline_sythesizer,
+        synthesizer = offline_synthesizer,
     )    

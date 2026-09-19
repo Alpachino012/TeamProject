@@ -110,7 +110,7 @@ python demo_ai.py --offline
 The second test command enforces the required 60% coverage gate. Keeping it separate means the
 provided smoke-only command still reports its own contract result cleanly.
 
-Verified locally: **60 tests passed** (including all 16 provided smoke tests) with **92% coverage**
+Verified locally: **63 tests passed** (including all 16 provided smoke tests) with **92% coverage**
 of the application and CLI layers. Strict mypy and Ruff checks also pass.
 
 ## Docker
